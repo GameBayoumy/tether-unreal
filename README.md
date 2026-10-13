@@ -29,11 +29,9 @@ Epic's OpenXR plugin doesn't run on the Mac: it has no Metal render path. Tether
 
 ## Installing
 
-1. Build the plugin (see below), or use a packaged build.
-2. Copy `out/TetherXR-UE<version>` to one of:
-   - `YourProject/Plugins/TetherXR`, for a single project
-   - `<Engine>/Engine/Plugins/Marketplace/TetherXR`, for every project on that engine
-3. The plugin is enabled by default, so you don't need to edit the `.uproject`.
+You don't need to install it. [Tether](https://github.com/GameBayoumy/tether) ships a build for each supported engine version. It installs that build into every Unreal Engine the Epic Games Launcher has installed, at `<Engine>/Engine/Plugins/Marketplace/TetherXR`, and keeps it up to date. If the launcher's **Verify** removes the plugin, Tether puts it back. The plugin is enabled by default in every project. C++ projects pick it up on their next build.
+
+To install by hand, copy `out/TetherXR-UE<version>` (see [Building](#building)) to `<Engine>/Engine/Plugins/Marketplace/TetherXR`, or to `YourProject/Plugins/TetherXR` for a single project.
 
 The plugin needs no paths or settings. It finds Tether through the manifest that Tether writes when it launches.
 

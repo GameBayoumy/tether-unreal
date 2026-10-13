@@ -26,6 +26,31 @@ mkdir -p "$repo/out"
 failed=0
 summary=()
 
+# Readies a package for Engine/Plugins/Marketplace/TetherXR, where Tether installs it:
+# - UBT bakes rpaths relative to where the plugin was built; point them at the engine relative to the install.
+# - BuildPlugin drops EnabledByDefault; engine plugins need it to load in every project.
+make_installable() {
+    local package="$1" dylib rpath
+    for dylib in "$package"/Binaries/Mac/*.dylib; do
+        otool -l "$dylib" | awk '/LC_RPATH/ {getline; getline; print $2}' | while read -r rpath; do
+            case "$rpath" in
+                @loader_path/|@executable_path/*) ;;
+                *) install_name_tool -delete_rpath "$rpath" "$dylib" ;;
+            esac
+        done
+        install_name_tool -add_rpath "@loader_path/../../../../../Binaries/Mac" "$dylib"
+        install_name_tool -add_rpath "@loader_path/../../../../Runtime/XRBase/Binaries/Mac" "$dylib"
+        codesign --force --sign - "$dylib"
+    done
+    /usr/bin/python3 - "$package/TetherXR.uplugin" <<'PY'
+import collections, json, sys
+path = sys.argv[1]
+plugin = json.load(open(path), object_pairs_hook=collections.OrderedDict)
+plugin["EnabledByDefault"] = True
+json.dump(plugin, open(path, "w"), indent="\t")
+PY
+}
+
 for version in "${versions[@]}"; do
     override="UE_ROOT_${version//./_}"
     engine="${!override:-/Users/Shared/Epic Games/UE_$version}"
@@ -57,6 +82,7 @@ for version in "${versions[@]}"; do
     elapsed=$(( $(date +%s) - start ))
 
     if [ $status -eq 0 ]; then
+        make_installable "$package"
         summary+=("UE $version: OK in ${elapsed}s -> out/TetherXR-UE$version")
     else
         failed=1
